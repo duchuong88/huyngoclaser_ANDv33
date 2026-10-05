@@ -102,7 +102,7 @@
                                             <option name="values">
                                               <map>
                                                 <entry key="color" value="000000" />
-                                                <entry key="imagePath" value="C:\Users\admin\Documents\Downloads\huyngoclaser.ezspa.online\media\Logo_goc.png" />
+                                                <entry key="imagePath" value="C:\Users\admin\Documents\Downloads\huyngoclaser.ezspa.online\huyngoclaser_iosv16\media\logo2.png" />
                                                 <entry key="scalingPercent" value="66" />
                                               </map>
                                             </option>
@@ -121,6 +121,50 @@
                                         </value>
                                       </entry>
                                       <entry key="foregroundTextAsset">
+                                        <value>
+                                          <PersistentState>
+                                            <option name="values">
+                                              <map>
+                                                <entry key="color" value="000000" />
+                                              </map>
+                                            </option>
+                                          </PersistentState>
+                                        </value>
+                                      </entry>
+                                      <entry key="monochromeClipArt">
+                                        <value>
+                                          <PersistentState>
+                                            <option name="values">
+                                              <map>
+                                                <entry key="imagePath" value="C:\Users\admin\AppData\Local\Temp\ic_android_black_24dp.xml" />
+                                              </map>
+                                            </option>
+                                          </PersistentState>
+                                        </value>
+                                      </entry>
+                                      <entry key="monochromeImage">
+                                        <value>
+                                          <PersistentState>
+                                            <option name="values">
+                                              <map>
+                                                <entry key="color" value="000000" />
+                                              </map>
+                                            </option>
+                                          </PersistentState>
+                                        </value>
+                                      </entry>
+                                      <entry key="monochromeText">
+                                        <value>
+                                          <PersistentState>
+                                            <option name="values">
+                                              <map>
+                                                <entry key="color" value="000000" />
+                                              </map>
+                                            </option>
+                                          </PersistentState>
+                                        </value>
+                                      </entry>
+                                      <entry key="monochromeTextAsset">
                                         <value>
                                           <PersistentState>
                                             <option name="values">
@@ -165,7 +209,7 @@
                                             <option name="values">
                                               <map>
                                                 <entry key="color" value="000000" />
-                                                <entry key="imagePath" value="C:\Users\admin\Documents\Downloads\huyngoclaser.ezspa.online\media\Logo_goc.png" />
+                                                <entry key="imagePath" value="C:\Users\admin\Documents\Downloads\huyngoclaser.ezspa.online\huyngoclaser_iosv16\media\logo2.png" />
                                               </map>
                                             </option>
                                           </PersistentState>
@@ -199,7 +243,7 @@
                                     <map>
                                       <entry key="assetType" value="IMAGE" />
                                       <entry key="iconShape" value="CIRCLE" />
-                                      <entry key="imageAsset" value="C:\Users\admin\Documents\Downloads\huyngoclaser.ezspa.online\media\Logo_goc.png" />
+                                      <entry key="imageAsset" value="C:\Users\admin\Documents\Downloads\huyngoclaser.ezspa.online\huyngoclaser_iosv16\media\logo2.png" />
                                     </map>
                                   </option>
                                 </PersistentState>
@@ -228,7 +272,7 @@
                                             <option name="values">
                                               <map>
                                                 <entry key="color" value="000000" />
-                                                <entry key="imagePath" value="C:\Users\admin\Documents\Downloads\huyngoclaser.ezspa.online\media\Logo_goc.png" />
+                                                <entry key="imagePath" value="C:\Users\admin\Documents\Downloads\huyngoclaser.ezspa.online\huyngoclaser_iosv16\media\logo2.png" />
                                                 <entry key="paddingPercent" value="-5" />
                                               </map>
                                             </option>
@@ -262,7 +306,7 @@
                                   <option name="values">
                                     <map>
                                       <entry key="assetType" value="IMAGE" />
-                                      <entry key="imageAsset" value="C:\Users\admin\Documents\Downloads\huyngoclaser.ezspa.online\media\Logo_goc.png" />
+                                      <entry key="imageAsset" value="C:\Users\admin\Documents\Downloads\huyngoclaser.ezspa.online\huyngoclaser_iosv16\media\logo2.png" />
                                     </map>
                                   </option>
                                 </PersistentState>

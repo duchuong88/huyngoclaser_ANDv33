@@ -6,6 +6,7 @@ import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -25,8 +26,6 @@ import com.google.firebase.messaging.RemoteMessage;
 
 import org.greenrobot.eventbus.EventBus;
 
-import java.io.IOException;
-import java.net.URL;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
@@ -50,11 +49,12 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         super.onMessageReceived(remoteMessage);
         // TODO(developer): Handle FCM messages here.
         Map<String, String> data = remoteMessage.getData();
-        Log.d("onMessageReceived", "data " + data);
+        Log.e("onMessageReceived", "data " + data);
     }
 
     @Override
     public void handleIntent(@NonNull Intent intent) {
+
         String type = intent.getStringExtra("type");
         if (type == null || type.isEmpty()) {
             sendNotification(intent);
@@ -89,13 +89,8 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
 
     }
 
-    public static Bitmap getImageUrl(String _url) {
-        try {
-            URL url = new URL(_url);
-            return BitmapFactory.decodeStream(url.openConnection().getInputStream());
-        } catch (Exception e) {
-            return null;
-        }
+    public static Bitmap getImageUrl(Context context, String url) {
+        return NotificationImageLoader.loadLargeIcon(context, url);
     }
 
     private PendingIntent createPendingIntent(Intent intent) {
@@ -124,7 +119,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         intent.putExtras(intentNoti.getExtras());
 
         PendingIntent pendingIntent = createPendingIntent(intent);
-        
+
         //PendingIntent pendingIntent = PendingIntent.getActivity(this, 0, intent, PendingIntent.FLAG_UPDATE_CURRENT);
 
         NotificationCompat.Builder notificationBuilder = new NotificationCompat.Builder(this, "channel_id")
@@ -160,6 +155,16 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         // muốn tạo nhiều notif thì phải cho thằng notification manager noti đến nhiều channel,
         // không được trùng nhau
         // vì vậy hàm new Random().nextInt() >> để tạo ra 1 channel ngẫu nhiên
+
+        // ✅ Kiểm tra quyền trước khi hiển thị thông báo
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                Log.w("Notification", "App chưa có quyền POST_NOTIFICATIONS, bỏ qua notify().");
+                return;
+            }
+        }
+
         notificationManager.notify(new Random().nextInt(), notificationBuilder.build());
         Log.e("On Click", "On Click");
     }
@@ -213,7 +218,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         //2
         String largeIconUrl = data.containsKey("largeIcon") ? data.get("largeIcon") : null;
         if (largeIconUrl != null && !"".equals(largeIconUrl) && !"ic_launcher".equals(largeIconUrl)) {
-            Bitmap b = getImageUrl(largeIconUrl);
+            Bitmap b = getImageUrl(this, largeIconUrl);
             if (b != null) notificationBuilder.setLargeIcon(b);
         }
 
@@ -265,17 +270,14 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         }
 
 
-        try {
-            String picture_url = data.get("picture_url");
-            if (picture_url != null && !"".equals(picture_url)) {
-                URL url = new URL(picture_url);
-                Bitmap bigPicture = BitmapFactory.decodeStream(url.openConnection().getInputStream());
+        String pictureUrl = data.get("picture_url");
+        if (pictureUrl != null && !"".equals(pictureUrl)) {
+            Bitmap bigPicture = NotificationImageLoader.loadBigPicture(this, pictureUrl);
+            if (bigPicture != null) {
                 notificationBuilder.setStyle(
                         new NotificationCompat.BigPictureStyle().bigPicture(bigPicture).setSummaryText(content)
                 );
             }
-        } catch (IOException e) {
-            e.printStackTrace();
         }
 
         NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
@@ -297,6 +299,16 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
         // muốn tạo nhiều notif thì phải cho thằng notification manager noti đến nhiều channel,
         // không được trùng nhau
         // vì vậy hàm new Random().nextInt() >> để tạo ra 1 channel ngẫu nhiên
+
+        // ✅ Kiểm tra quyền trước khi hiển thị thông báo
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, android.Manifest.permission.POST_NOTIFICATIONS)
+                    != PackageManager.PERMISSION_GRANTED) {
+                Log.w("Notification", "App chưa có quyền POST_NOTIFICATIONS, bỏ qua notify().");
+                return;
+            }
+        }
+
         notificationManager.notify(new Random().nextInt(), notificationBuilder.build());
         Log.e("On Click", "On Click");
     }
@@ -305,7 +317,7 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
     //hungnt
     @Override
     public void onNewToken(String token) {
-        Log.d("firebase token", "Refreshed token: " + token);
+        Log.e("🔥 FCM TOKEN", "Refreshed token: " + token);
 
         String name = this.getPackageName();
         SharedPreferences sharedPref = this.getSharedPreferences(name, Context.MODE_PRIVATE);

@@ -27,12 +27,16 @@ import org.json.JSONObject;
 import androidx.annotation.NonNull;
 import androidx.fragment.app.FragmentTransaction;
 import androidx.core.content.FileProvider;
-import android.telephony.SmsManager;
 import android.telephony.TelephonyManager;
 import android.util.Base64;
 import android.util.Log;
+import android.webkit.CookieManager;
+import android.webkit.WebStorage;
+import android.webkit.WebView;
 import android.widget.Toast;
 
+import com.google.firebase.encoders.json.BuildConfig;
+import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.gson.Gson;
 import com.permissionx.guolindev.PermissionX;
 import com.permissionx.guolindev.callback.RequestCallback;
@@ -47,7 +51,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -110,13 +113,7 @@ public class App21 {
             if (c.has("params"))
                 rs.params = c.getString("params");
 
-
-            Method method = App21.class.getDeclaredMethod(rs.sub_cmd, Result.class);
-
-
-            if (method.equals(null)) throw new Throwable("NO_" + rs.sub_cmd);
-            method.setAccessible(true);
-            method.invoke(this, rs);
+            dispatchCommand(rs);
 
         } catch (Throwable tx) {
             //nothing to do
@@ -125,6 +122,112 @@ public class App21 {
             rs.error = tx.toString();
             rs.data = "";
             App21Result(rs);
+        }
+    }
+
+    private void dispatchCommand(Result rs) throws Throwable {
+        switch (rs.sub_cmd) {
+            case "REBOOT":
+                REBOOT(rs);
+                return;
+            case "BACKGROUND":
+                BACKGROUND(rs);
+                return;
+            case "SET_BADGE":
+                SET_BADGE(rs);
+                return;
+            case "OPEN_QRCODE":
+                OPEN_QRCODE(rs);
+                return;
+            case "FINISH_ACTIVITY":
+                FINISH_ACTIVITY(rs);
+                return;
+            case "CAMERA":
+                CAMERA(rs);
+                return;
+            case "FILE":
+                FILE(rs);
+                return;
+            case "DELETE_FILE":
+                DELETE_FILE(rs);
+                return;
+            case "REQUIRE_PERMISSIONS":
+                REQUIRE_PERMISSIONS(rs);
+                return;
+            case "LOCATION":
+                LOCATION(rs);
+                return;
+            case "DOWNLOAD":
+                DOWNLOAD(rs);
+                return;
+            case "GET_DOWNLOADED":
+                GET_DOWNLOADED(rs);
+                return;
+            case "CLEAR_DOWNLOAD":
+                CLEAR_DOWNLOAD(rs);
+                return;
+            case "POST_TO_SERVER":
+                POST_TO_SERVER(rs);
+                return;
+            case "NOTI":
+                NOTI(rs);
+                return;
+            case "NOTI_DATA":
+                NOTI_DATA(rs);
+                return;
+            case "CLEAR_WEBVIEW_DATA":
+                CLEAR_WEBVIEW_DATA(rs);
+                return;
+            case "GET_PHONE":
+                GET_PHONE(rs);
+                return;
+            case "SEND_SMS":
+                SEND_SMS(rs);
+                return;
+            case "ALARM_NOTI":
+                ALARM_NOTI(rs);
+                return;
+            case "GET_SERVER_NOTI":
+                GET_SERVER_NOTI(rs);
+                return;
+            case "IMAGE_ROTATE":
+                IMAGE_ROTATE(rs);
+                return;
+            case "VIBRATOR":
+                VIBRATOR(rs);
+                return;
+            case "WV_VISIBLE":
+                WV_VISIBLE(rs);
+                return;
+            case "GET_TEXT":
+                GET_TEXT(rs);
+                return;
+            case "RECORD_AUDIO":
+                RECORD_AUDIO(rs);
+                return;
+            case "RECORD_VIDEO":
+                RECORD_VIDEO(rs);
+                return;
+            case "BROWSER":
+                BROWSER(rs);
+                return;
+            case "GET_INFO":
+                GET_INFO(rs);
+                return;
+            case "TEL":
+                TEL(rs);
+                return;
+            case "SHARE_OPEN":
+                SHARE_OPEN(rs);
+                return;
+            case "KEY":
+                KEY(rs);
+                return;
+            case "GET_NOTI_TOKEN":
+                GET_NOTI_TOKEN(rs);
+                return;
+            default:
+                throw new NoSuchMethodException("NO_" + rs.sub_cmd);
         }
     }
 
@@ -212,7 +315,9 @@ public class App21 {
             if (params == null || "".equals(params)) return map;
             for (String seg : params.split(",")) {
                 String[] arr = seg.split(":");
-                map.putIfAbsent(arr[0], arr.length > 1 ? arr[1] : null);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+                    map.putIfAbsent(arr[0], arr.length > 1 ? arr[1] : null);
+                }
             }
         } catch (Exception e) {
             //
@@ -245,7 +350,7 @@ public class App21 {
             public void run() {
                 Intent intent = new Intent(mContext, MainActivity.class);
                 intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-                PendingIntent pendingIntent = PendingIntent.getActivity(mContext, 0, intent, PendingIntent.FLAG_CANCEL_CURRENT);
+                PendingIntent pendingIntent = PendingIntent.getActivity(mContext, 0, intent, PendingIntent.FLAG_IMMUTABLE);
                 AlarmManager mgr = (AlarmManager) mContext.getSystemService(Context.ALARM_SERVICE);
                 mgr.set(AlarmManager.RTC, System.currentTimeMillis() + 100, pendingIntent);
                 System.exit(0);
@@ -261,8 +366,6 @@ public class App21 {
         MainActivity m = (MainActivity) mContext;
         m.setBackground(rs.params);
         App21Result(rs);
-
-
     }
 
     void SET_BADGE(final Result result) {
@@ -436,9 +539,25 @@ public class App21 {
     }
 
     Bitmap fromFile(File file) {
-
         String filePath = file.getPath();
-        return BitmapFactory.decodeFile(filePath);
+        BitmapFactory.Options bounds = new BitmapFactory.Options();
+        bounds.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(filePath, bounds);
+
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inSampleSize = calculateInSampleSize(bounds, 2048, 2048);
+        return BitmapFactory.decodeFile(filePath, options);
+    }
+
+    private int calculateInSampleSize(BitmapFactory.Options options, int reqWidth, int reqHeight) {
+        int height = options.outHeight;
+        int width = options.outWidth;
+        int inSampleSize = 1;
+
+        while ((height / inSampleSize) > reqHeight || (width / inSampleSize) > reqWidth) {
+            inSampleSize *= 2;
+        }
+        return Math.max(1, inSampleSize);
     }
 
     void CAMERA(final Result result) {
@@ -715,6 +834,48 @@ public class App21 {
         App21Result(result);
     }
 
+    void CLEAR_WEBVIEW_DATA(final Result result) {
+        try {
+            MainActivity m = (MainActivity) mContext;
+            WebView webView = m.wv;
+
+            // 🔥 Xoá cache, form, history
+            webView.clearCache(true);
+            webView.clearFormData();
+            webView.clearHistory();
+
+            // 🔥 Xoá WebStorage (IndexedDB, LocalStorage quota)
+            WebStorage.getInstance().deleteAllData();
+
+            // 🔥 Xoá cookie
+            CookieManager cookieManager = CookieManager.getInstance();
+            cookieManager.removeAllCookies(value -> {
+                cookieManager.flush();
+                Log.d("WebView", "Cookies đã xoá");
+
+                // 🔥 Xoá Firebase Token cũ
+                FirebaseMessaging.getInstance().deleteToken()
+                        .addOnCompleteListener(task -> {
+                            if (task.isSuccessful()) {
+                                Log.d("FCM", "Đã xoá Firebase token cũ");
+                                result.success = true;
+                                result.data = "Đã xoá toàn bộ cache, form, history, cookie, WebStorage và FCM token!";
+                            } else {
+                                Log.w("FCM", "Xoá token thất bại", task.getException());
+                                result.success = false;
+                                result.data = "Đã xoá WebView data, nhưng xoá FCM token thất bại: " + task.getException();
+                            }
+                            App21Result(result);
+                        });
+            });
+
+        } catch (Exception e) {
+            result.success = false;
+            result.data = "Lỗi khi xoá WebView data: " + e.getMessage();
+            App21Result(result);
+        }
+    }
+
     void GET_PHONE(final Result result) {
         final String READ_PHONE_STATE = Manifest.permission.READ_PHONE_STATE;
         _PERMISSION(result, READ_PHONE_STATE, new Runnable() {
@@ -733,30 +894,70 @@ public class App21 {
     }
 
     void SEND_SMS(final Result result) {
-        final String SEND_SMS = Manifest.permission.SEND_SMS;
-        _PERMISSION(result, SEND_SMS, new Runnable() {
+        final SMS sms = parseSMSParams(result.params);
+        if (sms == null) {
+            Result rs = result.copy();
+            rs.success = false;
+            rs.error = "INVALID_PARAMS";
+            App21Result(rs);
+            return;
+        }
+
+        final MainActivity m = (MainActivity) mContext;
+        m.runOnUiThread(new Runnable() {
             @Override
             public void run() {
-
                 try {
+                    Intent cInt = new Intent(Intent.ACTION_SENDTO, Uri.parse("smsto:" + Uri.encode(sms.getPhone())));
+                    cInt.putExtra("sms_body", sms.getBody());
 
-                    SMS sms = new Gson().fromJson(result.params, SMS.class);
+                    if (cInt.resolveActivity(m.getPackageManager()) == null) {
+                        Result rs = result.copy();
+                        rs.success = false;
+                        rs.error = "CANNOT_SEND_SMS";
+                        App21Result(rs);
+                        return;
+                    }
 
-                    SmsManager.getDefault().sendTextMessage(sms.number, null, sms.smsText, null, null);
+                    IsMe = true;
+                    m.startActivityForResult(cInt, activityResultIDManager.put(new ActivityResultID() {
+                        @Override
+                        public void run() {
+                            Result rs = result.copy();
+                            if (this.resultCode == Activity.RESULT_OK) {
+                                rs.success = true;
+                            } else {
+                                rs.success = false;
+                                rs.error = "SMS_CANCELLED";
+                            }
+                            App21Result(rs);
+                        }
+                    }));
+                } catch (ActivityNotFoundException ex) {
                     Result rs = result.copy();
-                    rs.success = true;
-
+                    rs.success = false;
+                    rs.error = "CANNOT_SEND_SMS";
                     App21Result(rs);
-                    ;
                 } catch (Exception ex) {
                     Result rs = result.copy();
                     rs.success = false;
                     rs.error = ex.getMessage();
                     App21Result(rs);
                 }
-
             }
         });
+    }
+
+    SMS parseSMSParams(String params) {
+        try {
+            SMS sms = new Gson().fromJson(params, SMS.class);
+            if (sms == null) return null;
+            if (sms.getPhone() == null || sms.getPhone().trim().isEmpty()) return null;
+            if (sms.getBody() == null) sms.smsText = "";
+            return sms;
+        } catch (Exception ex) {
+            return null;
+        }
     }
 
     void ALARM_NOTI(final Result result) {
@@ -1031,40 +1232,93 @@ public class App21 {
     //hungnt
     void KEY(final Result result) {
         final App21 t = this;
+
         if (result.params != null && !result.params.isEmpty()) {
-            //get
             String name = mContext.getPackageName();
             SharedPreferences sharedPref = mContext.getSharedPreferences(name, Context.MODE_PRIVATE);
+
             try {
                 JSONObject jObject = new JSONObject(result.params);
+                String key = jObject.optString("key", null);
+                String value = jObject.optString("value", null);
 
-                String  key = jObject.has("key") ? jObject.getString("key") : null;
-                String  value = jObject.has("value") ? jObject.getString("value") : null ;
-                if(key!=null && !key.isEmpty())
-                {
-                    if(value!=null)
-                    {
+                if (key != null && !key.isEmpty()) {
+                    SharedPreferences.Editor editor = sharedPref.edit();
 
-                        SharedPreferences.Editor editor = sharedPref.edit();
+                    if (value != null && !value.isEmpty()) {
+                        // Ghi
                         editor.putString(key, value);
                         editor.commit();
                         result.data = value;
-                    }else{
+                    } else {
+                        // Đọc
                         result.data = sharedPref.getString(key, null);
+
+                        // Nếu đang đọc Firebase token mà không có -> thử lấy mới
+                        if (result.data == null && key.equals("FirebaseNotiToken")) {
+                            FirebaseMessaging.getInstance().getToken()
+                                    .addOnCompleteListener(task -> {
+                                        if (task.isSuccessful()) {
+                                            String newToken = task.getResult();
+                                            sharedPref.edit().putString("FirebaseNotiToken", newToken).apply();
+                                            result.data = newToken;
+                                            result.success = true;
+                                            App21Result(result);
+                                        } else {
+                                            result.error = "Không lấy được token";
+                                            App21Result(result);
+                                        }
+                                    });
+                            return; // dừng vì hàm async
+                        }
                     }
+
                     result.success = true;
                 }
             } catch (JSONException e) {
-                e.printStackTrace();
-                result.error =  e.getMessage();
+                result.error = e.getMessage();
             }
-
-
         }
-
 
         App21Result(result);
     }
+
+//    void KEY(final Result result) {
+//        final App21 t = this;
+//        if (result.params != null && !result.params.isEmpty()) {
+//            //get
+//            String name = mContext.getPackageName();
+//            SharedPreferences sharedPref = mContext.getSharedPreferences(name, Context.MODE_PRIVATE);
+//            try {
+//                JSONObject jObject = new JSONObject(result.params);
+//
+//                String  key = jObject.has("key") ? jObject.getString("key") : null;
+//                String  value = jObject.has("value") ? jObject.getString("value") : null ;
+//                if(key!=null && !key.isEmpty())
+//                {
+//                    if(value!=null)
+//                    {
+//
+//                        SharedPreferences.Editor editor = sharedPref.edit();
+//                        editor.putString(key, value);
+//                        editor.commit();
+//                        result.data = value;
+//                    }else{
+//                        result.data = sharedPref.getString(key, null);
+//                    }
+//                    result.success = true;
+//                }
+//            } catch (JSONException e) {
+//                e.printStackTrace();
+//                result.error =  e.getMessage();
+//            }
+//
+//
+//        }
+//
+//
+//        App21Result(result);
+//    }
 
     public boolean onActivityResult(int requestCode, int resultCode, Intent intent, Activity activity) {
         // Activity act = activity.getCallingActivity().;
@@ -1076,6 +1330,34 @@ public class App21 {
         boolean t = IsMe;
         IsMe = false;
         return t; //true -> xuwr lys trong app21
+    }
+
+    //Lấy token thủ công
+    void GET_NOTI_TOKEN(final Result result) {
+        App21Result(result);
+//        FirebaseMessaging.getInstance().getToken()
+//                .addOnCompleteListener(task -> {
+//                    if (!task.isSuccessful()) {
+//                        Log.w("FCM", "Fetching FCM registration token failed", task.getException());
+//                        result.success = false;
+//                        result.data = "Lấy token thất bại: " + task.getException();
+//                        App21Result(result);
+//                        return;
+//                    }
+//
+//                    // Lấy token thành công
+//                    String token = task.getResult();
+//                    Log.d("FCM", "Current token: " + token);
+//
+//                    // Lưu vào SharedPreferences
+//                    String name = mContext.getPackageName();
+//                    SharedPreferences sharedPref = mContext.getSharedPreferences(name, Context.MODE_PRIVATE);
+//                    sharedPref.edit().putString("FirebaseNotiToken", token).apply();
+//
+//                    result.success = true;
+//                    result.data = token;
+//                    App21Result(result);
+//                });
     }
 }
 
@@ -1135,7 +1417,22 @@ class ActivityResultIDManager {
 
 class SMS {
     public String number;
+    public String phone;
     public String smsText;
+    public String body;
+    public String text;
+    public String callback;
+
+    public String getPhone() {
+        if (phone != null && !phone.trim().isEmpty()) return phone;
+        return number;
+    }
+
+    public String getBody() {
+        if (body != null) return body;
+        if (text != null) return text;
+        return smsText;
+    }
 }
 
 class Base64Require {

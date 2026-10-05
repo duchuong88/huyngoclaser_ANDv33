@@ -3,6 +3,10 @@ package vn.dendiezs.incoming;
 import androidx.annotation.RequiresApi;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.TaskStackBuilder;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
+import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 
 import android.app.PendingIntent;
 import android.content.Intent;
@@ -12,7 +16,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
-import android.view.WindowManager;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -57,7 +60,24 @@ public class IncomingCallActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        configureEdgeToEdgeWindow();
         setContentView(R.layout.activity_incoming_call);
+
+        View root = findViewById(R.id.incoming_call_root);
+        View actions = findViewById(R.id.clAction);
+        ViewCompat.setOnApplyWindowInsetsListener(root, (v, insets) -> {
+            Insets systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars());
+            v.setPadding(systemBars.left, systemBars.top, systemBars.right, 0);
+            actions.setPadding(0, 0, 0, systemBars.bottom);
+            return insets;
+        });
+        ViewCompat.requestApplyInsets(root);
+        if (WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView()) != null) {
+            WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView())
+                    .setAppearanceLightStatusBars(false);
+            WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView())
+                    .setAppearanceLightNavigationBars(false);
+        }
 
         if (getIntent().getExtras().getBoolean("IS_MAIN", false) == true) {
             mediaPlayer = MediaPlayer.create(this, R.raw.call);
@@ -108,6 +128,14 @@ public class IncomingCallActivity extends AppCompatActivity {
             }
         }, 60000L);
 
+    }
+
+    private void configureEdgeToEdgeWindow() {
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            getWindow().setStatusBarContrastEnforced(false);
+            getWindow().setNavigationBarContrastEnforced(false);
+        }
     }
 
 }
